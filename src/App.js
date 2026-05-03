@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
@@ -8,32 +8,12 @@ function App() {
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [direction, setDirection] = useState("RIGHT");
 
-  // 🎮 Keyboard control
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === "ArrowUp" && direction !== "DOWN") setDirection("UP");
-      if (e.key === "ArrowDown" && direction !== "UP") setDirection("DOWN");
-      if (e.key === "ArrowLeft" && direction !== "RIGHT") setDirection("LEFT");
-      if (e.key === "ArrowRight" && direction !== "LEFT") setDirection("RIGHT");
-    };
-
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [direction]);
-
   // 🐍 Move snake
-  useEffect(() => {
-    const interval = setInterval(() => {
-      moveSnake();
-    }, 120);
-
-    return () => clearInterval(interval);
-  }, [snake, direction]);
-
-  const moveSnake = () => {
+  const moveSnake = useCallback(() => {
     const newSnake = [...snake];
     const head = { ...newSnake[0] };
 
+    // Move head
     if (direction === "UP") head.y -= 1;
     if (direction === "DOWN") head.y += 1;
     if (direction === "LEFT") head.x -= 1;
@@ -51,24 +31,62 @@ function App() {
       newSnake.pop();
     }
 
-    // 💥 Collision
+    // 💥 Wall collision
     if (
       head.x < 0 ||
       head.y < 0 ||
       head.x >= GRID_SIZE ||
       head.y >= GRID_SIZE
     ) {
-      alert("Game Over");
+      alert("Game Over!");
       setSnake([{ x: 10, y: 10 }]);
+      setDirection("RIGHT");
       return;
     }
 
     setSnake(newSnake);
-  };
+  }, [snake, direction, food]);
+
+  // 🎮 Keyboard controls
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "ArrowUp" && direction !== "DOWN") {
+        setDirection("UP");
+      }
+
+      if (e.key === "ArrowDown" && direction !== "UP") {
+        setDirection("DOWN");
+      }
+
+      if (e.key === "ArrowLeft" && direction !== "RIGHT") {
+        setDirection("LEFT");
+      }
+
+      if (e.key === "ArrowRight" && direction !== "LEFT") {
+        setDirection("RIGHT");
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [direction]);
+
+  // ⏱ Snake movement interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      moveSnake();
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [moveSnake]);
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div style={{ textAlign: "center", color: "white" }}>
       <h1>🐍 Realistic Snake Game</h1>
+
       <div
         style={{
           width: GRID_SIZE * CELL_SIZE,
